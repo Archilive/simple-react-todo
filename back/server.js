@@ -2,21 +2,45 @@ const express = require('express')
 const cors = require('cors')
 const crypto = require('node:crypto')
 const multer = require('multer')
-const admin = require('firebase-admin')
 
+const { initializeFirebase } = require('./firebase')
 const s3Service = require('./s3Service')
 
-if (!admin.apps.length) {
-  admin.initializeApp()
-}
-
+const admin = initializeFirebase()
 const { FieldValue } = admin.firestore
 const db = admin.firestore()
 const tasksCollection = db.collection('tasks')
 const app = express()
 
-app.use(cors())
-app.use(express.json())
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : []
+
+app.disable('x-powered-by')
+app.use(
+  cors({
+    origin: corsOrigins.length ? corsOrigins : true,
+  }),
+)
+app.use(express.json({ limit: '1mb' }))
+
+app.use((req, res, next) => {
+  const startedAt = Date.now()
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt
+    console.log(
+      JSON.stringify({
+        severity: 'INFO',
+        message: 'http_request',
+        method: req.method,
+        path: req.originalUrl,
+        status: res.statusCode,
+        durationMs,
+      }),
+    )
+  })
+  next()
+})
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -26,13 +50,12 @@ const upload = multer({
 const STATUS_VALUES = new Set(['active', 'completed', 'archived'])
 
 const sanitizeFilename = (name = 'image') =>
-  name
-    .replace(/[^a-zA-Z0-9_.-]/g, '_')
-    .slice(-128) || 'image'
+  name.replace(/[^a-zA-Z0-9_.-]/g, '_').slice(-128) || 'image'
 
 const mapTaskBase = (doc) => {
   const data = doc.data()
   const images = Array.isArray(data.images) ? data.images : []
+
   return {
     id: doc.id,
     title: data.title,
@@ -111,6 +134,33 @@ const validatePayload = (payload, { partial = false } = {}) => {
 
 app.get('/healthz', (_, res) => {
   res.json({ status: 'ok' })
+})
+
+app.get('/metrics/basic', async (_, res) => {
+  try {
+    const snapshot = await tasksCollection.get()
+    const counts = {
+      active: 0,
+      completed: 0,
+      archived: 0,
+    }
+
+    snapshot.docs.forEach((doc) => {
+      const status = doc.data().status ?? 'active'
+      if (Object.prototype.hasOwnProperty.call(counts, status)) {
+        counts[status] += 1
+      }
+    })
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      total: snapshot.size,
+      ...counts,
+    })
+  } catch (error) {
+    console.error('Erreur lors de la récupération des métriques:', error)
+    res.status(500).json({ message: 'Impossible de récupérer les métriques.' })
+  }
 })
 
 app.get('/tasks', async (req, res) => {
@@ -225,7 +275,7 @@ app.post('/tasks/:id/images', upload.single('image'), async (req, res) => {
     const updatedDoc = await docRef.get()
     res.status(201).json(await serializeTask(updatedDoc))
   } catch (error) {
-    console.error('Erreur lors de l’upload de l’image:', error)
+    console.error('Erreur lors de l\'upload de l\'image:', error)
     res.status(500).json({ message: "Impossible d'ajouter l'image à la tâche." })
   }
 })
@@ -324,6 +374,7 @@ app.delete('/tasks/:id/images/:imageId', async (req, res) => {
 
 app.delete('/tasks/:id', async (req, res) => {
   const { id } = req.params
+
   try {
     const docRef = tasksCollection.doc(id)
     const snapshot = await docRef.get()
@@ -359,6 +410,11 @@ app.delete('/tasks/:id', async (req, res) => {
 })
 
 const PORT = process.env.PORT || 8080
-app.listen(PORT, () => {
-  console.log(`API Todo démarrée sur le port ${PORT}`)
-})
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`API Todo démarrée sur le port ${PORT}`)
+  })
+}
+
+module.exports = { app }

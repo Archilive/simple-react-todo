@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'https://simple-react-todo-474513.ew.r.appspot.com'
-
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
 const DEFAULT_FORM = { title: '', description: '' }
 
 const STATUS_LABELS = {

@@ -1,6 +1,8 @@
 runtime: nodejs20
-service: default
-entrypoint: /bin/sh -c "if [ -f ./.env ]; then set -a; . ./.env; set +a; fi; exec npm start"
+service: api
+entrypoint: npm start
+env_variables:
+  NODE_ENV: production
 automatic_scaling:
   target_cpu_utilization: 0.65
   min_instances: 0

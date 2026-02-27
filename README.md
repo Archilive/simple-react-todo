@@ -1,121 +1,116 @@
-# Todo List full-stack (Vite + Firebase + App Engine)
+# Projet Cloud Native - Todo Full Stack
 
-Cette application fournit une todo list complète avec un frontend React (Vite) et un backend Node/Express connecté à Firebase (Firestore). L’infrastructure est prête à être déployée sur Google Cloud App Engine en deux services :
+Application full-stack conçue pour une soutenance "Développer pour le Cloud".
 
-- **Service par défaut** : le frontend React servi via Express.
-- **Service `api`** : l’API REST qui manipule les tâches dans Firestore.
+Architecture retenue:
+- Frontend React/Vite servi sur **Google App Engine**.
+- Backend Express API déployé sur **AWS App Runner**.
+- Base de données managée **Google Firestore**.
+- Stockage d'images **AWS S3**.
 
-## Architecture
+## 1. Objectif du projet
 
+Démontrer une implémentation cloud-native complète avec:
+- architecture distribuée et scalable,
+- déploiement multi-cloud,
+- pipeline CI/CD automatisée,
+- monitoring et observabilité,
+- documentation exploitable pour la soutenance.
+
+## 2. Architecture
+
+```mermaid
+graph TD
+    User[Utilisateur] -->|HTTPS| Front[Frontend React - App Engine]
+    Front -->|REST API| Back[Backend Express - AWS App Runner]
+    Back -->|CRUD tâches| DB[(Firestore)]
+    Back -->|Upload / Signed URL| S3[(AWS S3)]
+
+    subgraph GCP
+      Front
+      DB
+    end
+
+    subgraph AWS
+      Back
+      S3
+    end
 ```
-./front   → Vite + React (JS) + Express pour servir le build
-./back    → Express + Firebase Admin SDK (Firestore)
-```
 
-Chaque tâche possède un titre, une description optionnelle ainsi qu’un statut (`active`, `completed`, `archived`). Le frontend permet d’ajouter, modifier, terminer, archiver et réactiver des tâches.
+## 3. Stack et services utilisés
 
-## Prérequis
+- Frontend: React 19, Vite, Express static server
+- Backend: Node.js 20, Express 5
+- Base de données: Firebase Admin SDK + Firestore
+- Stockage: AWS SDK v3 + S3 (upload et liens signés)
+- CI/CD: GitHub Actions
+- Monitoring:
+  - GCP Cloud Logging/Monitoring pour le frontend
+  - AWS CloudWatch Logs/Metrics pour le backend
 
-- Node.js 18 ou supérieur
-- `npm`
-- Un projet Google Cloud avec App Engine et Firestore activés
-- Le SDK Google Cloud (`gcloud`) installé et authentifié (`gcloud auth login`)
-- Pour le développement local : des identifiants Firebase (service account) ou l’authentification ADC (`gcloud auth application-default login`)
+## 4. Critères module couverts
 
-## Configuration Firebase
+- **Architecture & conception (/6)**: séparation front/back, services managés Firestore + S3, API stateless.
+- **Déploiement cloud (/6)**: front sur App Engine, back sur App Runner.
+- **CI/CD (/4)**: tests, builds, push image ECR, déploiements GCP/AWS.
+- **Monitoring & observabilité (/2)**: logs structurés backend + dashboards cloud + endpoint `/metrics/basic`.
+- **Documentation & présentation (/2)**: README + dossier `docs/` + trame soutenance.
 
-1. Dans la console Firebase / Google Cloud, créez une base Firestore en mode production.
-2. (Option local) Créez une clé de compte de service avec le rôle *Firestore Owner* et exportez le chemin du fichier JSON :
-   ```bash
-   export GOOGLE_APPLICATION_CREDENTIALS="/chemin/vers/service-account.json"
-   ```
-   Vous pouvez aussi utiliser `gcloud auth application-default login` pour générer des identifiants temporaires.
-3. Si votre projet possède plusieurs bases Firestore (ex. `simple-todo`) ou que la base par défaut est en mode Datastore, indiquez l’identifiant de la base à utiliser :
-   ```bash
-   export FIRESTORE_DATABASE_ID="simple-todo"
-   ```
-   Vous pourrez également définir cette variable dans App Engine via `env_variables`.
+## 5. Démarrage local
 
-## Installation des dépendances
+### Backend
 
 ```bash
 cd back
-npm install
-
-cd ../front
-npm install
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-## Développement local
-
-1. **Backend**
-   ```bash
-   cd back
-   npm run dev       # lance nodemon sur http://localhost:8080
-   ```
-2. **Frontend**
-   ```bash
-   cd front
-   cp .env.example .env.development   # modifiez si besoin
-   npm run dev       # lance Vite sur http://localhost:5173
-   ```
-   Le frontend consomme l’API via `VITE_API_BASE_URL` (par défaut `http://localhost:8080`).
-
-## Déploiement sur App Engine
-
-### 1. Backend (`api`)
+### Frontend
 
 ```bash
-cd back
-# Optionnel : définir des variables d’environnement si besoin
-# gcloud app deploy utilisera npm start
-
-gcloud app deploy app.yaml --project <ID_PROJET>
+cd front
+npm ci
+cp .env.example .env.local
+npm run dev
 ```
 
-L’URL du service aura la forme `https://api-dot-<ID_PROJET>.appspot.com`.
+## 6. Variables d'environnement
 
-### 2. Frontend (service par défaut)
+- `back/.env.example`: Firestore, S3, CORS.
+- `front/.env.example`: URL publique du backend.
 
-1. Indiquez l’URL publique de l’API dans la configuration de build :
-   ```bash
-   cd front
-   cp .env.production.example .env.production
-   # remplacez <ID_PROJET> par votre identifiant GCP puis sauvegardez
-   ```
-2. Déployez :
-   ```bash
-   gcloud app deploy app.yaml --project <ID_PROJET>
-   ```
+## 7. CI/CD (GitHub Actions)
 
-Le script `gcp-build` déclenchera automatiquement `npm run build` avant la mise en ligne. L’application sera disponible sur `https://<ID_PROJET>.appspot.com`.
+Fichier: `.github/workflows/ci-cd.yml`
 
-### (Optionnel) Routage personnalisé
+Pipeline:
+1. test backend,
+2. test frontend,
+3. build image backend,
+4. build frontend,
+5. déploiement backend AWS (ECR + App Runner),
+6. déploiement frontend GCP App Engine.
 
-Si vous préférez servir l’API sur le même domaine que le frontend (ex. `/api`), ajoutez un fichier `dispatch.yaml` à la racine du dépôt :
-```yaml
-dispatch:
-  - url: "*/api/*"
-    service: api
-  - url: "*/*"
-    service: default
-```
-Puis déployez-le :
-```bash
-gcloud app deploy dispatch.yaml --project <ID_PROJET>
-```
-Le frontend pourra alors pointer `VITE_API_BASE_URL` vers `https://<ID_PROJET>.appspot.com/api`.
+Secrets GitHub requis:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `AWS_ECR_REPOSITORY`
+- `AWS_APPRUNNER_SERVICE_ARN`
+- `FRONTEND_API_BASE_URL`
+- `GCP_SA_KEY`
+- `GCP_PROJECT_ID`
 
-## Points importants
+## 8. Déploiement manuel
 
-- `back/server.js` utilise les identifiants d’application par défaut pour se connecter à Firestore. Assurez-vous que le compte de service App Engine possède au minimum le rôle *Cloud Datastore User*.
-- Le backend expose les routes :
-  - `GET /tasks`
-  - `POST /tasks`
-  - `PATCH /tasks/:id`
-  - `DELETE /tasks/:id`
-  - `GET /healthz`
-- Le frontend s’appuie sur `fetch` et gère l’affichage de manière optimiste (mise à jour locale après chaque opération).
-- Pensez à configurer les règles de sécurité Firestore adaptées à votre contexte si vous ouvrez l’API publiquement.
+Les guides détaillés sont dans:
+- `docs/deployment.md`
+- `docs/monitoring.md`
+- `docs/soutenance.md`
 
-Bon déploiement !
+## 9. Comptes de test
+
+Utilisez un projet Firebase de test et un bucket S3 de test dédiés.
+Ne jamais commiter de clés. Privilégier les secrets CI/CD et IAM roles.

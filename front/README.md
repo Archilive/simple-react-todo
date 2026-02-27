@@ -1,16 +1,28 @@
-# React + Vite
+# Frontend - Todo Cloud Native
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend React/Vite servi par Express (`server.js`) pour un déploiement App Engine Standard.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm run dev      # développement local
+npm run build    # build production (dist/)
+npm run start    # sert dist/ en production
+npm run test     # tests Vitest
+```
 
-## React Compiler
+## Variables d'environnement
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Créez un `.env.local` à partir de `.env.example` :
 
-## Expanding the ESLint configuration
+```bash
+VITE_API_BASE_URL=https://your-backend-url.awsapprunner.com
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Déploiement App Engine
+
+```bash
+npm ci
+VITE_API_BASE_URL=https://your-backend-url.awsapprunner.com npm run build
+gcloud app deploy app.yaml --project <gcp-project-id>
+```

@@ -1,12 +1,9 @@
 runtime: nodejs20
-instance_class: F1
 service: front
+instance_class: F1
 entrypoint: npm start
 env_variables:
   NODE_ENV: production
-  VITE_API_BASE_URL: https://simple-react-todo-474513.ew.r.appspot.com
-build_env_variables:
-  VITE_API_BASE_URL: https://simple-react-todo-474513.ew.r.appspot.com
 automatic_scaling:
   target_cpu_utilization: 0.65
   min_instances: 0
