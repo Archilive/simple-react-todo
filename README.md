@@ -18,6 +18,11 @@ Démontrer une implémentation cloud-native complète avec:
 - Base de données managée: **Google Firestore**
 - Stockage fichiers: **AWS S3**
 
+## URLs publiques
+
+- Frontend (App Engine): [https://front-dot-simple-react-todo-474513.ew.r.appspot.com](https://front-dot-simple-react-todo-474513.ew.r.appspot.com)
+- Backend API (App Runner): [https://8wshbjrbb2.eu-west-3.awsapprunner.com](https://8wshbjrbb2.eu-west-3.awsapprunner.com)
+
 ```mermaid
 graph TD
     User[Utilisateur] -->|HTTPS| Front[Frontend React - App Engine]
