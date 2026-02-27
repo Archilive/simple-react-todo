@@ -1,23 +1,22 @@
 # Projet Cloud Native - Todo Full Stack
 
-Application full-stack conçue pour une soutenance "Développer pour le Cloud".
+Application full-stack réalisée pour la soutenance "Développer pour le Cloud".
 
-Architecture retenue:
-- Frontend React/Vite servi sur **Google App Engine**.
-- Backend Express API déployé sur **AWS App Runner**.
-- Base de données managée **Google Firestore**.
-- Stockage d'images **AWS S3**.
-
-## 1. Objectif du projet
+## Objectif
 
 Démontrer une implémentation cloud-native complète avec:
 - architecture distribuée et scalable,
 - déploiement multi-cloud,
 - pipeline CI/CD automatisée,
 - monitoring et observabilité,
-- documentation exploitable pour la soutenance.
+- documentation de déploiement/soutenance.
 
-## 2. Architecture
+## Architecture retenue
+
+- Frontend React/Vite: **Google App Engine** (`front`)
+- Backend Express API: **AWS App Runner**
+- Base de données managée: **Google Firestore**
+- Stockage fichiers: **AWS S3**
 
 ```mermaid
 graph TD
@@ -37,28 +36,18 @@ graph TD
     end
 ```
 
-## 3. Stack et services utilisés
+## Stack technique
 
-- Frontend: React 19, Vite, Express static server
+- Frontend: React 19, Vite, serveur Express statique
 - Backend: Node.js 20, Express 5
-- Base de données: Firebase Admin SDK + Firestore
-- Stockage: AWS SDK v3 + S3 (upload et liens signés)
+- Data: Firebase Admin SDK + Firestore
+- Storage: AWS SDK v3 + S3
 - CI/CD: GitHub Actions
-- Monitoring:
-  - GCP Cloud Logging/Monitoring pour le frontend
-  - AWS CloudWatch Logs/Metrics pour le backend
+- Monitoring: CloudWatch (AWS) + Cloud Logging/Monitoring (GCP)
 
-## 4. Critères module couverts
+## Exécution locale
 
-- **Architecture & conception (/6)**: séparation front/back, services managés Firestore + S3, API stateless.
-- **Déploiement cloud (/6)**: front sur App Engine, back sur App Runner.
-- **CI/CD (/4)**: tests, builds, push image ECR, déploiements GCP/AWS.
-- **Monitoring & observabilité (/2)**: logs structurés backend + dashboards cloud + endpoint `/metrics/basic`.
-- **Documentation & présentation (/2)**: README + dossier `docs/` + trame soutenance.
-
-## 5. Démarrage local
-
-### Backend
+Backend:
 
 ```bash
 cd back
@@ -67,7 +56,7 @@ cp .env.example .env
 npm run dev
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 cd front
@@ -76,24 +65,24 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## 6. Variables d'environnement
+## Variables d'environnement
 
 - `back/.env.example`: Firestore, S3, CORS.
 - `front/.env.example`: URL publique du backend.
 
-## 7. CI/CD (GitHub Actions)
+## CI/CD
 
-Fichier: `.github/workflows/ci-cd.yml`
+Workflow: `.github/workflows/ci-cd.yml`
 
 Pipeline:
-1. test backend,
-2. test frontend,
+1. tests backend,
+2. tests frontend,
 3. build image backend,
 4. build frontend,
 5. déploiement backend AWS (ECR + App Runner),
-6. déploiement frontend GCP App Engine.
+6. déploiement frontend GCP (App Engine).
 
-Secrets GitHub requis:
+Secrets GitHub requis (`Repository secrets`):
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `AWS_REGION`
@@ -103,14 +92,22 @@ Secrets GitHub requis:
 - `GCP_SA_KEY`
 - `GCP_PROJECT_ID`
 
-## 8. Déploiement manuel
+## Validation soutenance (checklist rapide)
 
-Les guides détaillés sont dans:
+- Front public répond.
+- Backend App Runner répond sur `/healthz`.
+- Le frontend appelle le backend App Runner (vérifiable dans Network `/tasks`).
+- Pipeline GitHub Actions verte sur `main`.
+- Firestore + S3 utilisés en production.
+
+## Documentation complémentaire
+
+- `docs/architecture.md`
 - `docs/deployment.md`
 - `docs/monitoring.md`
 - `docs/soutenance.md`
 
-## 9. Comptes de test
+## Sécurité
 
-Utilisez un projet Firebase de test et un bucket S3 de test dédiés.
-Ne jamais commiter de clés. Privilégier les secrets CI/CD et IAM roles.
+- Ne jamais commiter de clés/credentials.
+- Utiliser GitHub Secrets, IAM roles et variables d'environnement.
